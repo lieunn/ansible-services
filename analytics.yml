@@ -1,4 +1,7 @@
 - hosts: analytics
   gather_facts: no
   roles:
+       - nginx
+       - mongodb
+       - redis
        - postgres
