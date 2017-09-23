@@ -1,0 +1,2 @@
+- name: restart mongod
+  command: sh /{{mongo_conf_dir}}/start_mongodb.sh

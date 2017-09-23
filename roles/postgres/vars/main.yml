@@ -1,0 +1,6 @@
+postgres_conf_dir: /build/postgresql
+data_dir: /data/pgsql/
+remote_download_path: /sources
+postgres: { version: 9.6.2 }
+password: abcd@123#edc
+

@@ -1,0 +1,46 @@
+- name: Install the some tools
+  yum: name={{item.name}} state=installed
+  with_items:
+    - name: unzip
+    - name: zip
+    - name: tar
+    - name: libselinux-python
+    - name: numactl-devel.x86_64
+
+- name: Create directory if directories not exist
+  file: path={{ item }} state=directory mode=0755
+  with_items:
+    - "{{mongo_conf_dir}}"
+    - "{{data_dir}}"
+
+- name: Upload source nginx
+  copy: src=mongodb-linux-x86_64-rhel62-3.0.7.tgz
+        dest=/sources/mongodb-linux-x86_64-rhel62-3.0.7.tgz
+  register: mongo
+  tags:
+    - mongo
+
+- name: unarchive some source packages
+  unarchive: src={{item.src}} dest={{remote_download_path}} remote_src={{item.remote_src|default("no")}}
+  with_items: 
+    - src: "{{remote_download_path}}/mongodb-linux-x86_64-rhel62-3.0.7.tgz"
+      remote_src: "yes"
+    - src: "files/mongodb-linux-x86_64-rhel62-3.0.7.tgz"
+
+- name: copy source folder
+  command: cp -r {{remote_download_path}}/mongodb-linux-x86_64-rhel62-3.0.7/{{ item }} {{mongo_conf_dir}}
+  with_items:
+   - "bin/"
+
+- name: Copy same files
+  template: src={{item.src}} dest={{item.dest}} owner=root group=root mode={{item.mode|default("0644")}}
+  with_items: 
+    - src: "templates/start_mongodb.sh"
+      dest: "{{mongo_conf_dir}}"
+      mode: "0755"
+    - src: "templates/stop_mongodb.sh"
+      dest:  "{{mongo_conf_dir}}"
+      mode: "0755"
+    - src: "templates/mongo.conf"
+      dest: "{{mongo_conf_dir}}/mongo.conf"
+  notify: restart mongod

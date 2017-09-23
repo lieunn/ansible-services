@@ -1,0 +1,6 @@
+redis_conf_dir: /build/redis/conf
+data_dir: /data/redis/
+remote_download_path: /sources
+remote_file_path: /var/log/redis.log
+redis: { version: 3.2.10 }
+

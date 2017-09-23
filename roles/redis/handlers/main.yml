@@ -1,0 +1,4 @@
+- name: restart redis
+  shell: /etc/init.d/redis start creates=/var/run/redis.pid
+  tags: redis
+

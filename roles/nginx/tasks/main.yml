@@ -1,0 +1,64 @@
+- name: Install the some tools
+  yum: name={{item.name}} state=installed
+  with_items:
+    - name: unzip
+    - name: zip
+    - name: tar
+    - name: libselinux-python
+
+
+- name: Create directory if directories not exist
+  file: path={{ item }} state=directory mode=0755
+  with_items:
+    - /sources
+    - /build/nginx
+    - /build/nginx/logs
+
+- name: Upload source nginx
+  copy: src=nginx-1.2.8.tar.gz
+        dest=/sources/nginx-1.2.8.tar.gz
+  register: nginx
+  tags:
+    - nginx
+
+- name: Upload source nginx-push-stream-module
+  copy: src=nginx-push-stream-module.tar.gz
+        dest=/sources/nginx-push-stream-module.tar.gz
+  register: nginx
+  tags:
+    - nginx
+
+- name: unarchive some source packages
+  unarchive: src={{item.src}} dest={{remote_download_path}} remote_src={{item.remote_src|default("no")}}
+  with_items: 
+    - src: "{{remote_download_path}}/nginx-1.2.8.tar.gz"
+      remote_src: "yes"
+    - src: "{{remote_download_path}}/nginx-push-stream-module.tar.gz"
+      remote_src: "yes"
+    - src: "files/nginx-1.2.8.tar.gz"
+    - src: "files/nginx-push-stream-module.tar.gz"
+
+- name: Update mime.types
+  copy: src=mime.types dest=/build/nginx/mime.types
+  sudo: True
+  tags:
+    - nginx
+
+
+- name: Nginx | Compile the Nginx source
+  shell: cd /sources/nginx-1.2.8 && sh ./configure --prefix=/build/nginx --with-http_ssl_module --with-http_stub_status_module  --with-http_realip_module   --add-module=../nginx-push-stream-module && make && make install
+  when: >
+   nginx.changed
+  sudo: True
+  tags:
+    - nginx
+
+- name: Copy same files
+  template: src={{item.src}} dest={{item.dest}} owner=root group=root mode={{item.mode|default("0644")}}
+  with_items: 
+    - src: "templates/init.d_nginx"
+      dest: "/etc/init.d/nginx"
+      mode: "0755"
+    - src: "templates/nginx.conf"
+      dest: "{{nginx_conf_dir}}/nginx.conf"
+  notify: restart nginx

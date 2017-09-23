@@ -1,0 +1,3 @@
+nginx_conf_dir: /build/nginx/conf
+remote_download_path: /sources
+

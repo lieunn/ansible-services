@@ -1,0 +1,6 @@
+- name: restart postgresql
+  shell: cd {{postgres_conf_dir}}/bin/ && ./postmaster -D {{data_dir}} >  {{postgres_conf_dir}}/postgres.log 2>&1 & 
+  tags: postgres
+  sudo: True
+  sudo_user: postgres
+

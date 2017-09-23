@@ -1,0 +1,5 @@
+mongo_conf_dir: /build/mongodb/
+remote_download_path: /sources
+data_dir: /data/mongodb
+
+

@@ -1,0 +1,44 @@
+- name: install postgresql deps
+  yum: name={{item}} state=present
+  with_items:
+  - make
+  - gcc
+  - readline-devel.x86_64
+  tags: postgres
+
+- name: Create User Postgres
+  user: name=postgres createhome=yes home=/home/postgres  shell=/bin/bash password={{password}}
+  register: create user
+  
+- name: Create directory if directories not exist
+  file: path={{ item }} state=directory owner=postgres group=postgres mode=0755
+  with_items:
+    - "{{postgres_conf_dir}}"
+    - "{{data_dir}}"
+        
+- name: download postgresql source
+  get_url: url=https://ftp.postgresql.org/pub/source/v9.6.2/postgresql-{{postgres.version}}.tar.gz
+           dest={{remote_download_path}}
+  register: download
+
+- name: unarchive some source packages
+  unarchive: src={{item.src}} dest={{remote_download_path}} remote_src={{item.remote_src|default("no")}}
+  with_items:
+    - src: "{{remote_download_path}}/postgresql-{{postgres.version}}.tar.gz"
+      remote_src: "yes"
+          
+- name: Postgresql | Compile the PostgreSQL source
+  shell: cd {{remote_download_path}}/postgresql-{{postgres.version}} && sh ./configure --prefix={{postgres_conf_dir}}  && make && make install
+  tags:
+    - postgres
+        
+- name: Permission directory Postgresql
+  file: dest={{postgres_conf_dir}} owner=postgres group=postgres mode=0775 recurse=yes
+  
+- name:  Initialize postgreSQL data directory
+  shell: cd {{postgres_conf_dir}}/bin &&  ./initdb -D  {{data_dir}}
+  tags:
+    - postgres
+  sudo: True
+  sudo_user: postgres
+  notify: restart postgresql

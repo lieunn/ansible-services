@@ -1,0 +1,45 @@
+- name: install redis deps
+  yum: name={{item}} state=present
+  with_items:
+  - make
+  - gcc
+  - wget
+  tags: redis
+- name: Create directory if directories not exist
+  file: path={{ item }} state=directory mode=0755
+  with_items:
+    - "{{redis_conf_dir}}"
+    - "{{data_dir}}"
+- name: download redis source
+  get_url: url=http://download.redis.io/releases/redis-{{redis.version}}.tar.gz
+           dest={{remote_download_path}}
+  register: download
+
+- name: unarchive some source packages
+  unarchive: src={{item.src}} dest={{remote_download_path}} remote_src={{item.remote_src|default("no")}}
+  with_items:
+    - src: "{{remote_download_path}}/redis-{{redis.version}}.tar.gz"
+      remote_src: "yes"
+
+- name: install redis
+  shell: make chdir=/sources/redis-{{redis.version}} creates=/sources/redis-{{redis.version}}/src/redis-server
+  tags: redis
+
+- name: move compiled redis binaries
+  shell: cp -f {{item}} /usr/local/bin chdir=/sources/redis-{{redis.version}}/src
+  with_items:
+  - redis-cli
+  - redis-server
+  - redis-benchmark
+  tags: redis
+
+- name: configure redis-server
+  template: src=redis.conf.j2 dest=/etc/redis.conf
+  notify:
+  - restart redis
+  tags: redis
+
+- name: make redis a service
+  template: src=redis_init_script.j2 dest=/etc/init.d/redis mode=755
+  tags: redis
+  notify: restart redis
